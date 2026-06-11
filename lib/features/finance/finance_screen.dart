@@ -95,6 +95,39 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
     final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final isToday = financeState.selectedDate == todayStr;
 
+    final netVal = financeState.netBalance;
+    final hasTransactions = financeState.transactions.isNotEmpty;
+    
+    final Color cardBg;
+    final Color cardBorder;
+    final Color accentColor;
+    final IconData statusIcon;
+    final String statusText;
+    final String moneyText;
+
+    if (!hasTransactions || financeState.isLoading) {
+      cardBg = AppTheme.slate900.withOpacity(0.45);
+      cardBorder = AppTheme.slate800.withOpacity(0.4);
+      accentColor = AppTheme.slate400;
+      statusIcon = Icons.remove_circle_outline_rounded;
+      statusText = 'ไม่มีประวัติการบันทึกรายการในวันนี้';
+      moneyText = currencyFormat.format(0.0);
+    } else if (netVal >= 0) {
+      cardBg = AppTheme.emerald950;
+      cardBorder = AppTheme.emeraldBorder.withOpacity(0.4);
+      accentColor = AppTheme.emerald400;
+      statusIcon = Icons.trending_up_rounded;
+      statusText = 'ยอดเงินคงเหลือเป็นบวก';
+      moneyText = currencyFormat.format(netVal);
+    } else {
+      cardBg = AppTheme.rose950;
+      cardBorder = AppTheme.roseBorder.withOpacity(0.4);
+      accentColor = AppTheme.rose400;
+      statusIcon = Icons.trending_down_rounded;
+      statusText = 'ยอดรายจ่ายเกินรายรับ';
+      moneyText = currencyFormat.format(netVal);
+    }
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -252,6 +285,67 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+
+              // ยอดรวมสุทธิ Card (Net Balance)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: cardBorder, width: 1),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: accentColor.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        statusIcon,
+                        color: accentColor,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'ยอดรวมสุทธิ',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.slate100,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            statusText,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: accentColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      moneyText,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: accentColor,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
 

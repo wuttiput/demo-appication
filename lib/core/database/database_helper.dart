@@ -20,8 +20,9 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
     );
   }
@@ -30,11 +31,20 @@ class DatabaseHelper {
     await db.execute('PRAGMA foreign_keys = ON');
   }
 
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      try {
+        await db.execute('ALTER TABLE todos ADD COLUMN order_index INTEGER NOT NULL DEFAULT 0');
+      } catch (e) {
+        print("Database migration error: $e");
+      }
+    }
+  }
+
   Future _createDB(Database db, int version) async {
     const idType = 'INTEGER PRIMARY KEY AUTOINCREMENT';
     const textType = 'TEXT NOT NULL';
     const textNullable = 'TEXT';
-    const integerType = 'INTEGER NOT NULL';
     const realType = 'REAL NOT NULL';
 
     // 1. Users Table (To support user references, we default to user_id = 1)
@@ -73,6 +83,7 @@ class DatabaseHelper {
         title $textType,
         is_done INTEGER NOT NULL DEFAULT 0,
         date TEXT NOT NULL DEFAULT (date('now')),
+        order_index INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     ''');
@@ -167,7 +178,7 @@ class DatabaseHelper {
       'todos',
       where: 'date = ?',
       whereArgs: [date],
-      orderBy: 'is_done ASC, id DESC',
+      orderBy: 'order_index ASC, id DESC',
     );
   }
 
@@ -181,6 +192,16 @@ class DatabaseHelper {
     );
   }
 
+  Future<int> updateTodoOrder(int id, int orderIndex) async {
+    final db = await instance.database;
+    return await db.update(
+      'todos',
+      {'order_index': orderIndex},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<int> deleteTodo(int id) async {
     final db = await instance.database;
     return await db.delete(
@@ -188,6 +209,16 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<int> getFlameScore() async {
+    final val = await queryNewsMetadata('todo_flame_score');
+    if (val == null) return 0;
+    return int.tryParse(val) ?? 0;
+  }
+
+  Future<void> updateFlameScore(int score) async {
+    await updateNewsMetadata('todo_flame_score', score.toString());
   }
 
   // News (Cache)

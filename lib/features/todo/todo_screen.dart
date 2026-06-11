@@ -63,6 +63,53 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
     notifier.setDate(formatted);
   }
 
+  void _showCongratulationsSnackBar(BuildContext context) {
+    final messages = [
+      "ยอดเยี่ยมมาก! คุณทำภารกิจสำเร็จแล้ว! 🎉 (+1 🔥)",
+      "สุดยอดไปเลย! หนทางแห่งความสำเร็จอยู่ไม่ไกล! 🚀 (+1 🔥)",
+      "ก้าวหน้าไปอีกขั้นแล้ว! ทำงานนี้สำเร็จได้อย่างงดงาม! ✨ (+1 🔥)",
+      "เก่งมาก! ความเพียรพยายามไม่เคยทรยศใคร! 💪 (+1 🔥)",
+      "ทำได้ยอดเยี่ยม! ความสำเร็จสร้างได้ในทุกๆ วัน! 🌟 (+1 🔥)",
+    ];
+    final randomMessage = (messages..shuffle()).first;
+
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        duration: const Duration(seconds: 3),
+        content: GlassContainer(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          color: const Color(0xFF022C22), // emerald950
+          opacity: 0.9,
+          borderColor: const Color(0x4010B981), // emeraldBorder
+          borderRadius: BorderRadius.circular(12),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.check_circle_outline_rounded,
+                color: AppTheme.emerald400,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  randomMessage,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.emerald400,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final todoState = ref.watch(todoProvider);
@@ -131,6 +178,103 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 16),
+
+              // Flame Achievement Card
+              GlassContainer(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                color: AppTheme.slate900,
+                opacity: 0.4,
+                borderColor: Colors.orangeAccent.withOpacity(0.3),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withOpacity(0.2),
+                            blurRadius: 12,
+                            spreadRadius: 2,
+                          )
+                        ]
+                      ),
+                      child: ShaderMask(
+                        shaderCallback: (bounds) => const LinearGradient(
+                          colors: [Colors.orangeAccent, Colors.redAccent],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ).createShader(bounds),
+                        child: const Icon(
+                          Icons.local_fire_department_rounded,
+                          color: Colors.white,
+                          size: 26,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'ระดับความเพียรสะสม',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.slate400,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'คุณทำสำเร็จแล้ว ${todoState.flameScore} ภารกิจ',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppTheme.slate100,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Colors.orange, Colors.redAccent],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          )
+                        ]
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            '${todoState.flameScore}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            '🔥',
+                            style: TextStyle(fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -258,12 +402,32 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
                                 ],
                               ),
                             )
-                          : ListView.builder(
+                          : ReorderableListView.builder(
                               itemCount: todoState.todos.length,
+                              onReorder: (oldIndex, newIndex) {
+                                todoNotifier.reorderTodos(oldIndex, newIndex);
+                              },
+                              proxyDecorator: (Widget child, int index, Animation<double> animation) {
+                                return AnimatedBuilder(
+                                  animation: animation,
+                                  builder: (BuildContext context, Widget? child) {
+                                    final double animValue = Curves.easeInOut.transform(animation.value);
+                                    final double elevation = animValue * 6;
+                                    return Material(
+                                      elevation: elevation,
+                                      color: Colors.transparent,
+                                      shadowColor: AppTheme.indigo600.withOpacity(0.3),
+                                      child: child,
+                                    );
+                                  },
+                                  child: child,
+                                );
+                              },
                               itemBuilder: (context, index) {
                                 final todo = todoState.todos[index];
                                 final completed = todo.completed;
                                 return Card(
+                                  key: ValueKey(todo.id),
                                   color: completed
                                       ? AppTheme.slate950.withOpacity(0.2)
                                       : AppTheme.slate900,
@@ -273,7 +437,12 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
                                       children: [
                                         // Checkbox with animation
                                         IconButton(
-                                          onPressed: () => todoNotifier.toggleTodo(todo),
+                                          onPressed: () async {
+                                            final wasCompleted = await todoNotifier.toggleTodo(todo);
+                                            if (wasCompleted && context.mounted) {
+                                              _showCongratulationsSnackBar(context);
+                                            }
+                                          },
                                           icon: Icon(
                                             completed
                                                 ? Icons.check_circle
@@ -298,6 +467,19 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
                                               fontWeight: completed
                                                   ? FontWeight.normal
                                                   : FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+
+                                        // Drag handle to trigger reordering
+                                        ReorderableDragStartListener(
+                                          index: index,
+                                          child: const Padding(
+                                            padding: EdgeInsets.symmetric(horizontal: 8.0),
+                                            child: Icon(
+                                              Icons.drag_handle,
+                                              color: AppTheme.slate500,
+                                              size: 20,
                                             ),
                                           ),
                                         ),

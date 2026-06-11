@@ -1,12 +1,9 @@
-import 'dart:convert';
-import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart' as xml;
 import 'package:intl/intl.dart';
 import '../../core/database/database_helper.dart';
-import '../../core/security/secure_storage_helper.dart';
 import '../settings/keys_provider.dart';
 import 'news_model.dart';
 
